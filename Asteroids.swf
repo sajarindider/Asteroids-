@@ -1,0 +1,899 @@
+
+//----------------------------------------------------------------------
+//Symbol 67 MovieClip Frame 61
+//----------------------------------------------------------------------
+    stop();
+    _root.menu.customItems[1].visible = (_root.menu.customItems[2].visible = (_root.menu.customItems[3].visible = false));
+    name_txt.restrict = "A-Z 0-9";
+    name_txt.text = ((_root.game_so.data.playerName.length > 0) ? (_root.game_so.data.playerName.stripSpaces()) : "");
+    Selection.setFocus(name_txt);
+    Selection.setSelection(name_txt.length, name_txt.length);
+    ok_btn.onRelease = function () {
+        if (name_txt.length > 0) {
+            _root.game_so.data.playerName = name_txt.text.stripSpaces();
+        }
+        _root.nextFrame();
+    };
+    ok_btn.onKeyDown = function () {
+        name_txt.text = name_txt.text.stripSpaces();
+        if (Key.getCode() == 13) {
+            Key.removeListener(this);
+            this.onRelease();
+        }
+        updateAfterEvent();
+    };
+    ok_btn.onKeyUp = function () {
+        name_txt.text = name_txt.text.stripSpaces();
+        updateAfterEvent();
+    };
+    Key.addListener(ok_btn);
+
+﻿
+//----------------------------------------------------------------------
+//Frame 3
+//----------------------------------------------------------------------
+    function introMover() {
+        this._x = this._x + this.vx;
+        this._y = this._y + this.vy;
+        this.wrapPos();
+    }
+    function introAsteroids() {
+        var _local1 = 10;
+        while (_local1--) {
+            var _local3 = Math.random() * (Math.PI*2);
+            var _local2 = [100, 50, 25][_local1 % 3];
+            intro_mc.attachMovie("asteroid", _local1, _local1, {vx:Math.sin(_local3) * 1.5, vy:Math.cos(_local3) * 1.5, _x:Math.random() * xMax, _y:Math.random() * yMax, _xscale:_local2, _yscale:_local2, onEnterFrame:introMover}).gotoAndStop((_local1 % 4) + 1);
+        }
+    }
+    stop();
+    stopAllSounds();
+    clearInterval(beatTimeout);
+    Key.removeListener(keyListener);
+    MovieClip.prototype.wrapPos = function () {
+        if (this._x > (xMax + (this._width / 2))) {
+            if (this._name == "saucer_mc") {
+                this.hideSaucer();
+            } else {
+                this._x = this._x - (xMax + this._width);
+            }
+        }
+        if (this._y > (yMax + (this._height / 2))) {
+            this._y = this._y - (yMax + this._height);
+        }
+        if (this._x < ((-this._width) / 2)) {
+            if (this._name == "saucer_mc") {
+                this.hideSaucer();
+            } else {
+                this._x = this._x + (xMax + this._width);
+            }
+        }
+        if (this._y < ((-this._height) / 2)) {
+            this._y = this._y + (yMax + this._height);
+        }
+    };
+    String.prototype.stripSpaces = function () {
+        if (this.length == 0) {
+            return("");
+        }
+        this=this.split(".").join("");//parameter overwritten
+        this.split(".").join("");
+        this=this.split("-").join("");//parameter overwritten
+        this.split("-").join("");
+        while (this.charAt(0) == " ") {
+            this=this.substr(1);//parameter overwritten
+            this.substr(1);
+        }
+        this=this.split("  ").join(" ");//parameter overwritten
+        this.split("  ").join(" ");
+        this=this.split("  ").join(" ");//parameter overwritten
+        this.split("  ").join(" ");
+        return(this);
+    };
+    game_so = SharedObject.getLocal("neaveAsteroids");
+    score = 0;
+    level = startLevel;
+    xMax = 500;
+    yMax = 375;
+    introAsteroids();
+    playGame_btn.onRelease = function () {
+        play();
+    };
+    highScores_btn.onRelease = function () {
+        gotoAndStop (6);
+    };
+    quit_btn.onRelease = function () {
+        if (!fsAble) {
+            getURL ("http://www.neave.com/games/asteroids/", "_top");
+        }
+        getURL ("javascript:quitGame();void(0);");
+    };
+    neave_btn.onRelease = function () {
+        getURL ("http://www.neave.com/games/", "_top");
+    };
+    _root.menu.customItems[1].visible = (_root.menu.customItems[2].visible = (_root.menu.customItems[3].visible = false));
+
+﻿
+//----------------------------------------------------------------------
+//Frame 6
+//----------------------------------------------------------------------
+    function showScores() {
+        var _local2 = 10;
+        while (_local2 > 0) {
+            var _local5 = scoreboard_lv["name" + (page + _local2)];
+            var _local4 = scoreboard_lv["score" + (page + _local2)];
+            var _local3 = this[("line" + _local2) + "_mc"];
+            _local3.rank_txt.text = (page + _local2) + ".";
+            _local3.name_txt.text = (_local5.length ? (_local5.stripSpaces().toUpperCase()) : "-");
+            _local3.score_txt.text = (_local4.length ? (_local4) : "-");
+            _local3._visible = true;
+            loading_mc._visible = false;
+            _local2--;
+        }
+    }
+    stop();
+    clearInterval(beatTimeout);
+    page = 0;
+    maxScore = 100;
+    scoreboard_lv = new LoadVars();
+    if ((score > 0) && (game_so.data.playerName.length > 0)) {
+        scoreboard_lv.score = score;
+        scoreboard_lv.name = game_so.data.playerName.stripSpaces().toLowerCase();
+    }
+    scoreboard_lv.url = _url;
+    scoreboard_lv.game = "asteroids";
+    scoreboard_lv.sendAndLoad("http://www.neave.com/games/games_score.php", scoreboard_lv, "POST");
+    scoreboard_lv.onLoad = function (success) {
+        if (success) {
+            if (scoreboard_lv.success == "1") {
+                next_btn._visible = true;
+                if (scoreboard_lv.maxScore.length > 0) {
+                    maxScore = Number(scoreboard_lv.maxScore);
+                }
+                showScores();
+            } else {
+                loading_mc.errorMsg = scoreboard_lv.errorMsg.toUpperCase();
+                loading_mc.gotoAndStop(2);
+            }
+        } else {
+            loading_mc.errorMsg = "COULD NOT ACCESS SCORES.";
+            loading_mc.gotoAndStop(2);
+        }
+    };
+    score = 0;
+    next_btn._visible = (last_btn._visible = false);
+    last_btn.onPress = function () {
+        page = page - 10;
+        if (page < 0) {
+            page = 0;
+        }
+        if (page < 10) {
+            last_btn._visible = false;
+        }
+        next_btn._visible = true;
+        showScores();
+    };
+    next_btn.onPress = function () {
+        page = page + 10;
+        if (page > maxScore) {
+            page = maxScore;
+        }
+        if (page > (maxScore - 20)) {
+            next_btn._visible = false;
+        }
+        last_btn._visible = true;
+        showScores();
+    };
+    newGame_btn.onRelease = function () {
+        gotoAndStop (3);
+    };
+
+﻿
+//----------------------------------------------------------------------
+//Symbol 59 MovieClip Frame 3
+//----------------------------------------------------------------------
+    stop();
+﻿
+//----------------------------------------------------------------------
+//Symbol 67 MovieClip Frame 1
+//----------------------------------------------------------------------
+    stop();
+
+﻿
+//----------------------------------------------------------------------
+//Frame 5
+//----------------------------------------------------------------------
+    function setLives() {
+        lives_mc[lives].removeMovieClip();
+        var _local1 = 0;
+        while (_local1 < lives) {
+            var _local2 = lives_mc.attachMovie("spaceship", _local1, _local1, {_x:_local1 * 15, _xscale:60, _yscale:60});
+            _local2.gotoAndStop(1);
+            _local2.hit_mc._visible = false;
+            _local1++;
+        }
+    }
+    function pauseSaucer() {
+        if (saucer_mc._visible) {
+            if (paused) {
+                saucerBig_sound.stop();
+                saucerSmall_sound.stop();
+            } else if (saucer_mc.small) {
+                saucerSmall_sound.start(0, 80);
+            } else {
+                saucerBig_sound.start(0, 80);
+            }
+        }
+    }
+    function explodeSaucer() {
+        saucer_mc.hideSaucer();
+        var _local8 = 6;
+        while (_local8--) {
+            var _local1 = Math.random() * (Math.PI*2);
+            var _local3 = Math.sin(_local1) * 2;
+            var _local2 = Math.cos(_local1) * 2;
+            asteroids_mc.explode_mc.attachMovie("explosion", explodeNum, explodeNum, {vx:_local3, vy:_local2, fuse:Math.ceil(Math.random() * 40), _x:((_local3 * Math.random()) * 4) + saucer_mc._x, _y:((_local2 * Math.random()) * 4) + saucer_mc._y, onEnterFrame:explodeMover});
+            explodeNum++;
+        }
+        sound_mc.gotoAndPlay("bangMedium");
+    }
+    function explodeSpaceship() {
+        spaceship_mc._visible = false;
+        explode_mc._x = spaceship_mc._x;
+        explode_mc._y = spaceship_mc._y;
+        lives--;
+        setLives();
+        var _local3 = 4;
+        while (_local3--) {
+            var _local2 = explode_mc.createEmptyMovieClip(_local3, _local3);
+            _local2.vx = Math.sin(Math.random() * (Math.PI*2));
+            _local2.vy = Math.cos(Math.random() * (Math.PI*2));
+            _local2.fuse = Math.ceil(Math.random() * 30) + 10;
+            _local2._x = (Math.random() * 12) - 6;
+            _local2._y = (Math.random() * 12) - 6;
+            _local2._rotation = Math.random() * 360;
+            _local2.lineStyle(0, 16777215);
+            _local2.moveTo(0, -8);
+            _local2.lineTo(0, 8);
+            _local2.onEnterFrame = explodeMover;
+        }
+        if (lives > 0) {
+            newShipTimeout = setInterval(newSpaceship, 1750);
+        } else {
+            gameOver_mc.gotoAndPlay(2);
+            gameOver_mc._visible = true;
+            quitGame_mc._visible = false;
+            pauseGame_mc._visible = false;
+            _root.menu.customItems[1].visible = (_root.menu.customItems[2].visible = (_root.menu.customItems[3].visible = false));
+            Key.removeListener(keyListener);
+            clearInterval(beatTimeout);
+            clearInterval(hyperTimeout);
+            clearInterval(newShipTimeout);
+            clearInterval(shipBlinkTimeout);
+            clearInterval(newGameTimeout);
+            thrust_sound.stop();
+            saucerBig_sound.stop();
+            saucerSmall_sound.stop();
+        }
+        thrust_sound.stop();
+        sound_mc.gotoAndPlay("bangMedium");
+    }
+    function explodeMover() {
+        if (paused) {
+            return(undefined);
+        }
+        this._x = this._x + this.vx;
+        this._y = this._y + this.vy;
+        this.fuse--;
+        if (this.fuse < 0) {
+            this.removeMovieClip();
+        }
+    }
+    function missileMover() {
+        if (paused) {
+            return(undefined);
+        }
+        this._x = this._x + this.vx;
+        this._y = this._y + this.vy;
+        this.wrapPos();
+        this.fuse--;
+        if (this.fuse == 0) {
+            this._visible = false;
+            delete this.onEnterFrame;
+        }
+    }
+    function saucerMover() {
+        if (paused) {
+            return(undefined);
+        }
+        this._x = this._x + this.vx;
+        if (Math.random() < 0.02) {
+            this.vy = (int(Math.random() * 3) - 1) * 2;
+        }
+        if (this.vy != 0) {
+            this._y = this._y + this.vy;
+        }
+        this.wrapPos();
+        var _local3 = 4;
+        while (_local3--) {
+            var _local4 = _root[("missile" + _local3) + "_mc"];
+            if (_local4._visible) {
+                if (_local4.hitTest(this)) {
+                    _local4._visible = false;
+                    explodeSaucer();
+                    if (this.small) {
+                        score = score + 1000;
+                    } else {
+                        score = score + 200;
+                    }
+                }
+            }
+        }
+        var _local4 = missile4_mc;
+        if ((!_local4._visible) && (Math.random() < 0.1)) {
+            var _local5 = ((this.small && (spaceship_mc._visible)) ? (Math.atan2(((spaceship_mc._x - this._x) + (Math.random() * 64)) - 32, ((this._y - spaceship_mc._y) + (Math.random() * 64)) - 32)) : (Math.random() * (Math.PI*2)));
+            _local4.fuse = 24;
+            _local4.vx = Math.sin(_local5) * 8;
+            _local4.vy = Math.cos(_local5) * -8;
+            _local4._x = this._x + _local4.vx;
+            _local4._y = this._y + (_local4.vy * 2);
+            _local4._visible = true;
+            _local4.onEnterFrame = missileMover;
+            sound_mc.gotoAndPlay("fire");
+        }
+        if ((((blinkCount == 0) && (!exploded)) && (spaceship_mc._visible)) && (spaceship_mc.hit_mc.hitTest(this))) {
+            exploded = true;
+            explodeSpaceship();
+        }
+    }
+    function asteroidMover() {
+        if (paused) {
+            return(undefined);
+        }
+        this._x = this._x + this.vx;
+        this._y = this._y + this.vy;
+        this.wrapPos();
+        var _local9 = false;
+        var _local8 = false;
+        if (saucer_mc._visible && (saucer_mc.hitTest(this))) {
+            _local9 = true;
+            explodeSaucer();
+        }
+        if ((((blinkCount == 0) && (!exploded)) && (spaceship_mc._visible)) && (spaceship_mc.hit_mc.hitTest(this))) {
+            _local8 = true;
+            _local9 = _local8;
+            exploded = _local9;
+            explodeSpaceship();
+        }
+        var _local4 = 5;
+        while (_local4--) {
+            var _local3 = _root[("missile" + _local4) + "_mc"];
+            if (_local3._visible && (_local3.hitTest(this))) {
+                _local3._visible = false;
+                _local9 = true;
+                if (_local4 < 4) {
+                    _local8 = true;
+                }
+                break;
+            }
+        }
+        if (_local9) {
+            var _local5 = (this._xscale = (this._yscale = this._yscale / 2));
+            var _local11 = Math.random() * (Math.PI*2);
+            this.vx = this.vx + Math.sin(_local11);
+            this.vy = this.vy + Math.cos(_local11);
+            if (Math.abs(this.vx) < 0.1) {
+                this.vx = this.vx + 0.2;
+            }
+            if (Math.abs(this.vy) < 0.1) {
+                this.vy = this.vy + 0.2;
+            }
+            asteroidCount--;
+            var _local10 = int(_local5 / 25) + 4;
+            while (_local10--) {
+                _local11 = Math.random() * (Math.PI*2);
+                var vx = (Math.sin(_local11) * 2);
+                var vy = (Math.cos(_local11) * 2);
+                asteroids_mc.explode_mc.attachMovie("explosion", explodeNum, explodeNum, {vx:vx, vy:vy, fuse:Math.ceil(Math.random() * _local5), _x:((vx * Math.random()) * 4) + this._x, _y:((vy * Math.random()) * 4) + this._y, onEnterFrame:explodeMover});
+                explodeNum++;
+            }
+            if (_local5 < 25) {
+                this.removeMovieClip();
+                sound_mc.gotoAndPlay("bangSmall");
+                if (_local8) {
+                    score = score + 100;
+                }
+            } else {
+                if (_local5 == 50) {
+                    sound_mc.gotoAndPlay("bangLarge");
+                    if (_local8) {
+                        score = score + 20;
+                    }
+                } else {
+                    sound_mc.gotoAndPlay("bangMedium");
+                    if (_local8) {
+                        score = score + 50;
+                    }
+                }
+                this.gotoAndStop((_local4 % 4) + 1);
+                _local11 = Math.random() * (Math.PI*2);
+                makeAsteroid(this._x, this._y, this.vx + Math.sin(_local11), this.vy + Math.cos(_local11), _local5);
+            }
+        }
+    }
+    function makeAsteroid(x, y, vx, vy, s) {
+        asteroidNum++;
+        if (Math.abs(vx) < 0.1) {
+            vx = vx + 0.2;
+        }
+        if (Math.abs(vy) < 0.1) {
+            vy = vy + 0.2;
+        }
+        var _local1 = asteroids_mc.attachMovie("asteroid", asteroidNum, asteroidNum, {vx:vx, vy:vy, _x:x, _y:y, _xscale:s, _yscale:s, onEnterFrame:asteroidMover});
+        _local1.gotoAndStop((asteroidNum % 4) + 1);
+        return(_local1);
+    }
+    function hyperspace() {
+        if (paused) {
+            return(undefined);
+        }
+        with (spaceship_mc) {
+            _visible = true;
+            _x = (Math.random() * (xMax - (_width * 2))) + _width;
+            _y = (Math.random() * (yMax - (_height * 2))) + _height;
+        }
+        clearInterval(hyperTimeout);
+    }
+    function beatSound() {
+        if (paused) {
+            return(undefined);
+        }
+        beatToggle = !beatToggle;
+        if (beatToggle) {
+            beat1_sound.start();
+        } else {
+            beat2_sound.start();
+        }
+        if (gameOver_mc._visible) {
+            return(undefined);
+        }
+        if (beatCount > 300) {
+            beatCount = beatCount - 10;
+            clearInterval(beatTimeout);
+            beatTimeout = setInterval(beatSound, beatCount);
+        }
+        if ((((beatCount < 700) && (saucerPause == 0)) && (!saucer_mc._visible)) && (Math.random() < 0.05)) {
+            if ((beatCount < 400) && (Math.random() < 0.4)) {
+                saucer_mc._xscale = (saucer_mc._yscale = 50);
+                saucer_mc.small = true;
+                saucerSmall_sound.start(0, 100);
+            } else {
+                saucer_mc._xscale = (saucer_mc._yscale = 100);
+                saucer_mc.small = false;
+                saucerBig_sound.start(0, 100);
+            }
+            if (Math.random() < 0.5) {
+                saucer_mc.vx = -2;
+                saucer_mc._x = (saucer_mc._width / 2) + xMax;
+            } else {
+                saucer_mc.vx = 2;
+                saucer_mc._x = saucer_mc._width / -2;
+            }
+            saucer_mc.vy = 0;
+            saucer_mc._y = Math.random() * yMax;
+            saucer_mc._visible = true;
+            saucer_mc.onEnterFrame = saucerMover;
+        }
+        if ((asteroidCount == 0) && (!saucer_mc._visible)) {
+            clearInterval(beatTimeout);
+            level++;
+            level_mc.level_txt.text = level;
+            level_mc._visible = true;
+            newGameTimeout = setInterval(newGame, 2000);
+        }
+    }
+    function blinkSpaceship() {
+        if (paused) {
+            return(undefined);
+        }
+        if (blinkCount > 0) {
+            blinkCount--;
+            if (spaceship_mc._alpha > 99) {
+                spaceship_mc._alpha = 0;
+            } else {
+                spaceship_mc._alpha = 100;
+            }
+        } else {
+            blinkCount = 0;
+            spaceship_mc._alpha = 100;
+            clearInterval(shipBlinkTimeout);
+        }
+        updateAfterEvent();
+    }
+    function newSpaceship() {
+        spaceship_mc._x = 250;
+        spaceship_mc._y = 190;
+        spaceship_mc._rotation = 0;
+        var _local1 = false;
+        for (var _local2 in asteroids_mc) {
+            if (spaceship_mc.hitTest(asteroids_mc[_local2])) {
+                _local1 = true;
+                break;
+            }
+        }
+        if ((!_local1) && (!saucer_mc._visible)) {
+            spaceship_mc._visible = true;
+            exploded = (fireKey = false);
+            if (upKey) {
+                thrust_sound.start(0, 1000);
+            }
+            dx = (dy = 0);
+            clearInterval(newShipTimeout);
+            clearInterval(shipBlinkTimeout);
+            blinkCount = BLINK_MAX;
+            shipBlinkTimeout = setInterval(blinkSpaceship, 80);
+        }
+    }
+    function newGame() {
+        level_mc._visible = false;
+        var _local3 = ((level < 10) ? (level + 2) : 12);
+        asteroidCount = _local3 * 7;
+        while (_local3--) {
+            var _local2 = Math.random() * (Math.PI*2);
+            var _local1 = makeAsteroid(Math.random() * xMax, Math.random() * yMax, Math.sin(_local2) * 1.5, Math.cos(_local2) * 1.5, 100);
+            if (_local1.hitTest(spaceship_mc) || (_local1.hitTest(safeArea_mc))) {
+                _local3++;
+                asteroidNum--;
+            }
+        }
+        beatCount = ((level < 7) ? (1100 - (level * 100)) : 400);
+        beatSound();
+        Key.addListener(keyListener);
+        clearInterval(newGameTimeout);
+    }
+    stop();
+    spaceship_mc.gotoAndStop(1);
+    spaceship_mc._visible = (spaceship_mc.hit_mc._visible = (safeArea_mc._visible = (gameOver_mc._visible = (quitGame_mc._visible = (pauseGame_mc._visible = (missile0_mc._visible = (missile1_mc._visible = (missile2_mc._visible = (missile3_mc._visible = (missile4_mc._visible = (saucer_mc._visible = false)))))))))));
+    dx = (dy = (explodeNum = (asteroidNum = (scoreMod = (score = 0)))));
+    lives = 3;
+    level_mc.level_txt.text = level;
+    friction = 0.98;
+    rads = (Math.PI/180);
+    blinkCount = (BLINK_MAX = 20);
+    saucerPause = (SAUCER_MAX = 80);
+    leftKey = (rightKey = (upKey = (fireKey = (paused = (pausedOld = (exploded = (beatToggle = false)))))));
+    asteroids_mc.createEmptyMovieClip("explode_mc", 0);
+    beat1_sound = new Sound(this);
+    beat1_sound.attachSound("beat1");
+    beat2_sound = new Sound(this);
+    beat2_sound.attachSound("beat2");
+    thrust_sound = new Sound(spaceship_mc);
+    thrust_sound.attachSound("thrust");
+    saucerBig_sound = new Sound(saucer_mc);
+    saucerBig_sound.attachSound("saucerBig");
+    saucerSmall_sound = new Sound(saucer_mc);
+    saucerSmall_sound.attachSound("saucerSmall");
+    mute_sound = new Sound();
+    setLives();
+    keyListener = new Object();
+    keyListener.onKeyDown = function () {
+        switch (Key.getCode()) {
+            case 37 : 
+            case 65 : 
+            case 90 : 
+                leftKey = true;
+                return;
+            case 39 : 
+            case 68 : 
+            case 88 : 
+                rightKey = true;
+                return;
+            case 38 : 
+            case 87 : 
+            case 192 : 
+                if (paused) {
+                    return(undefined);
+                }
+                if (!upKey) {
+                    thrust_sound.start(0, 1000);
+                }
+                upKey = true;
+                spaceship_mc.play();
+                return;
+            case 32 : 
+            case 40 : 
+            case 83 : 
+            case 191 : 
+            case 35 : 
+            case 222 : 
+                fireKey = true;
+                return;
+            case 77 : 
+                muteSound();
+                return;
+            case 80 : 
+                pauseGame();
+                return;
+            case 81 : 
+                pauseGame_mc._visible = false;
+                pausedOld = paused;
+                paused = (quitGame_mc._visible = true);
+                return;
+            case 78 : 
+                if (quitGame_mc._visible) {
+                    quitGame_mc._visible = false;
+                    pauseGame_mc._visible = (paused = pausedOld);
+                    if (paused) {
+                        pauseSaucer();
+                    }
+                }
+                return;
+            case 89 : 
+                quitGame();
+                return;
+            case 16 : 
+            case 17 : 
+            case 38 : 
+            case 56 : 
+                if (!(spaceship_mc._visible && (!paused))) { 
+                    break;
+                }
+                spaceship_mc._visible = false;
+                spaceship_mc.gotoAndStop(1);
+                leftKey = (rightKey = (upKey = (fireKey = false)));
+                dx = (dy = 0);
+                thrust_sound.stop();
+                hyperTimeout = setInterval(hyperspace, 500);
+        }
+    };
+    keyListener.onKeyUp = function () {
+        switch (Key.getCode()) {
+            case 37 : 
+            case 65 : 
+            case 90 : 
+                leftKey = false;
+                return;
+            case 39 : 
+            case 68 : 
+            case 88 : 
+                rightKey = false;
+                return;
+            case 38 : 
+            case 87 : 
+            case 192 : 
+                upKey = false;
+                thrust_sound.stop();
+                spaceship_mc.gotoAndStop(1);
+                return;
+            case 32 : 
+            case 83 : 
+            case 191 : 
+            case 35 : 
+            case 222 : 
+                fireKey = false;
+        }
+    };
+    spaceship_mc.onEnterFrame = function () {
+        if (paused || (!this._visible)) {
+            return(undefined);
+        }
+        if (leftKey) {
+            this._rotation = this._rotation - 10;
+        }
+        if (rightKey) {
+            this._rotation = this._rotation + 10;
+        }
+        var _local7 = Math.sin(this._rotation * rads);
+        var _local6 = -Math.cos(this._rotation * rads);
+        if (upKey) {
+            dx = dx + (_local7 / 4);
+            dy = dy + (_local6 / 4);
+        }
+        dx = dx * friction;
+        dy = dy * friction;
+        this._x = this._x + dx;
+        this._y = this._y + dy;
+        this.wrapPos();
+        if (fireKey) {
+            fireKey = false;
+            var _local3 = 4;
+            var _local4 = -1;
+            while (_local3--) {
+                if (!_root[("missile" + _local3) + "_mc"]._visible) {
+                    _local4 = _local3;
+                    break;
+                }
+            }
+            if (_local4 != -1) {
+                var _local5 = _root[("missile" + _local4) + "_mc"];
+                _local5.fuse = 24;
+                _local5.vx = (_local7 * 10) + dx;
+                _local5.vy = (_local6 * 10) + dy;
+                _local5._x = this._x + (_local7 * 10);
+                _local5._y = this._y + (_local6 * 10);
+                _local5._visible = true;
+                _local5.onEnterFrame = missileMover;
+                sound_mc.gotoAndPlay("fire");
+            }
+        }
+        var _local8 = int(score / 10000);
+        if (scoreMod != _local8) {
+            scoreMod = _local8;
+            lives++;
+            setLives();
+            sound_mc.gotoAndPlay("extra");
+        }
+        if (((((blinkCount == 0) && (!exploded)) && (this._visible)) && (missile4_mc._visible)) && (missile4_mc.hitTest(this.hit_mc))) {
+            missile4_mc._visible = false;
+            exploded = true;
+            explodeSpaceship();
+        }
+        if (saucerPause > 0) {
+            saucerPause--;
+        }
+    };
+    saucer_mc.hideSaucer = function () {
+        saucerPause = SAUCER_MAX;
+        saucerBig_sound.stop();
+        saucerSmall_sound.stop();
+        this._visible = false;
+        delete this.onEnterFrame;
+    };
+    newGameTimeout = setInterval(newGame, 1500);
+    newShipTimeout = setInterval(newSpaceship, 1800);
+
+﻿
+//----------------------------------------------------------------------
+//Symbol 59 MovieClip Frame 7
+//----------------------------------------------------------------------
+    stop();
+﻿
+//----------------------------------------------------------------------
+//Frame 1
+//----------------------------------------------------------------------
+    function playFullScreen() {
+        getURL ("javascript:playFullScreen();void(0);");
+        quitGame();
+    }
+    function menuHandler(o, item) {
+        item.customItems[1].caption = (paused ? "Unpause game" : "Pause game");
+        item.customItems[3].caption = (muted ? "Unmute sound" : "Mute sound");
+    }
+    function quitGame() {
+        clearInterval(beatTimeout);
+        clearInterval(hyperTimeout);
+        clearInterval(newShipTimeout);
+        clearInterval(shipBlinkTimeout);
+        clearInterval(newGameTimeout);
+        gotoAndStop (3);
+    }
+    function pauseGame() {
+        if (quitGame_mc._visible || (level_mc._visible)) {
+            return(undefined);
+        }
+        leftKey = (rightKey = (upKey = (fireKey = false)));
+        spaceship_mc.gotoAndStop(1);
+        thrust_sound.stop();
+        pauseGame_mc._visible = (paused = !paused);
+        pauseSaucer();
+    }
+    function muteSound() {
+        muted = !muted;
+        if (muted) {
+            mute_sound.setVolume(0);
+        } else {
+            mute_sound.setVolume(100);
+        }
+    }
+    stop();
+    startLevel = 1;
+    muted = false;
+    this.onEnterFrame = function () {
+        sofar = this.getBytesLoaded();
+        total = this.getBytesTotal();
+        pc_txt.text = int((sofar / total) * 100) + "%";
+        if (sofar == total) {
+            delete this.onEnterFrame;
+            nextFrame();
+        }
+    };
+    fsAble = (fsAble == "true") || (fsAble == true);
+    Stage.showMenu = true;
+    fs_cm = new ContextMenu(menuHandler);
+    fs_cm.hideBuiltInItems();
+    fs_cm.customItems.push(new ContextMenuItem("Start game in full screen", playFullScreen, false, true, fsAble), new ContextMenuItem("Pause game", pauseGame, false, true, false), new ContextMenuItem("Quit game", quitGame, false, true, false), new ContextMenuItem("Mute sound", muteSound, false, true, false));
+    _root.menu = fs_cm;
+
+﻿
+//----------------------------------------------------------------------
+//Symbol 59 MovieClip Frame 9
+//----------------------------------------------------------------------
+    stop();
+﻿
+//----------------------------------------------------------------------
+//Frame 4
+//----------------------------------------------------------------------
+    function checkButtons() {
+        plus_btn.enabled = (minus_btn.enabled = true);
+        if (level < 2) {
+            level = 1;
+            minus_btn.enabled = false;
+        } else if (level > 9) {
+            level = 10;
+            plus_btn.enabled = false;
+        }
+        level_txt.text = level;
+    }
+    stop();
+    checkButtons();
+    minus_btn.onRelease = function () {
+        level--;
+        checkButtons();
+    };
+    plus_btn.onRelease = function () {
+        level++;
+        checkButtons();
+    };
+    ok_btn.onRelease = function () {
+        startLevel = level;
+        Key.removeListener(keyListener);
+        _root.menu.customItems[1].visible = (_root.menu.customItems[2].visible = (_root.menu.customItems[3].visible = true));
+        play();
+    };
+    ok_btn.onKeyDown = function () {
+        var _local2 = Key.getCode();
+        if (_local2 == 13) {
+            Key.removeListener(ok_btn);
+            this.onRelease();
+        }
+        if (_local2 == 187) {
+            plus_btn.onRelease();
+        }
+        if (_local2 == 189) {
+            minus_btn.onRelease();
+        }
+        if ((_local2 > 47) && (_local2 < 58)) {
+            level = _local2 - 48;
+            if (level == 0) {
+                level = 10;
+            }
+            checkButtons();
+        }
+    };
+    Key.addListener(ok_btn);
+
+﻿
+//----------------------------------------------------------------------
+//Symbol 59 MovieClip Frame 5
+//----------------------------------------------------------------------
+    stop();
+﻿
+//----------------------------------------------------------------------
+//Symbol 87 MovieClip Frame 1
+//----------------------------------------------------------------------
+    stop();
+    errorMsg = "";
+
+﻿
+//----------------------------------------------------------------------
+//Frame 2
+//----------------------------------------------------------------------
+    yes_btn.onRelease = function () {
+        play();
+    };
+    no_btn.onRelease = function () {
+        if (!fsAble) {
+            getURL ("http://www.picklaptop.com/", "_top");
+        }
+        getURL ("javascript:quitGame();void(0);");
+    };
+
+﻿
+//----------------------------------------------------------------------
+//Symbol 59 MovieClip Frame 11
+//----------------------------------------------------------------------
+    stop();
+﻿
+//----------------------------------------------------------------------
+//Symbol 59 MovieClip Frame 1
+//----------------------------------------------------------------------
+    stop();
